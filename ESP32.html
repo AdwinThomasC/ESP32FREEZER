@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ESP Temperature Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      margin: 0;
+      background-color: #f8f9fa;
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .dashboard {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 40px;
+      justify-content: center;
+    }
+    .card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+      width: 100%;
+      max-width: 600px;
+      box-sizing: border-box;
+    }
+    .card h3 {
+      margin-top: 0;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+    canvas {
+      width: 100% !important;
+      height: 300px !important;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: center;
+    }
+    th {
+      background-color: #f1f1f1;
+    }
+    #error {
+      color: red;
+      text-align: center;
+      margin-top: 20px;
+    }
+    .out-of-range {
+      background-color: #f8d7da;
+      color: #721c24;
+      font-weight: bold;
+  }
+  </style>
+</head>
+<body>
+  <h2>ESP32 Temperature Monitoring Dashboard</h2>
+  <div class="dashboard">
+    <div class="card">
+      <h3>ESP1 Temperature</h3>
+      <canvas id="esp1Chart"></canvas>
+      <table>
+        <thead>
+          <tr><th>Timestamp</th><th>Temperature (°C)</th></tr>
+        </thead>
+        <tbody id="esp1Body"><tr><td colspan="2">Loading...</td></tr></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h3>ESP2 Temperature</h3>
+      <canvas id="esp2Chart"></canvas>
+      <table>
+        <thead>
+          <tr><th>Timestamp</th><th>Temperature (°C)</th></tr>
+        </thead>
+        <tbody id="esp2Body"><tr><td colspan="2">Loading...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <div id="error"></div>
+
+  <script>
+  const sheetURL = "https://script.google.com/macros/s/AKfycbwK0rCq9c7Uot0kX67vz3_acVy0F3vll9xY4rODACDreRovfaOqpiKpsPGQGxCNu2ev/exec?action=getData";
+
+  let esp1Chart = null;
+  let esp2Chart = null;
+
+  function formatTime(dateStr) {
+  const date = new Date(dateStr);
+  return date.toLocaleString(undefined, {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
+  });
+}
+
+
+  function createChart(ctx, labels, data, label) {
+    return new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: label,
+          data: data,
+          borderColor: '#007bff',
+          backgroundColor: 'rgba(0, 123, 255, 0.1)',
+          tension: 0.2,
+          fill: true
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: {
+            ticks: { maxRotation: 45, minRotation: 45 }
+          },
+          y: {
+            beginAtZero: false,
+            title: {
+              display: true,
+              text: 'Temperature (°C)'
+            }
+          }
+        }
+      }
+    });
+  }
+
+  function updateChart(chart, labels, temps) {
+    if (chart) {
+      chart.data.labels = labels;
+      chart.data.datasets[0].data = temps;
+      chart.update();
+    }
+  }
+
+  function renderSection(rows, bodyId, canvasId, label, isESP1 = true) {
+    const tbody = document.getElementById(bodyId);
+    tbody.innerHTML = "";
+
+    if (!Array.isArray(rows) || rows.length === 0) {
+      tbody.innerHTML = "<tr><td colspan='2'>No data available.</td></tr>";
+      return;
+    }
+
+    const labels = [];
+    const temps = [];
+
+    rows.forEach(row => {
+      const time = formatTime(row[0]);
+      labels.push(time);
+      temps.push(parseFloat(row[1]));
+
+      const tr = document.createElement("tr");
+      const temp = parseFloat(row[1]);
+
+      if (temp > 30 || temp < 26) {
+        tr.classList.add("out-of-range");
+      }
+
+      tr.innerHTML = `<td>${time}</td><td>${temp.toFixed(1)}</td>`;
+      tbody.appendChild(tr);
+    });
+
+    const ctx = document.getElementById(canvasId).getContext("2d");
+    if (isESP1) {
+      if (!esp1Chart) {
+        esp1Chart = createChart(ctx, labels, temps, label);
+      } else {
+        updateChart(esp1Chart, labels, temps);
+      }
+    } else {
+      if (!esp2Chart) {
+        esp2Chart = createChart(ctx, labels, temps, label);
+      } else {
+        updateChart(esp2Chart, labels, temps);
+      }
+    }
+  }
+
+  function fetchDataAndUpdate() {
+    fetch(sheetURL)
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById("error").textContent = "";
+
+        renderSection(data.esp1, "esp1Body", "esp1Chart", "ESP1 Temperature", true);
+        renderSection(data.esp2, "esp2Body", "esp2Chart", "ESP2 Temperature", false);
+      })
+      .catch(error => {
+        document.getElementById("error").textContent = "Fetch error: " + error;
+        document.getElementById("esp1Body").innerHTML = "<tr><td colspan='2'>Error loading data</td></tr>";
+        document.getElementById("esp2Body").innerHTML = "<tr><td colspan='2'>Error loading data</td></tr>";
+      });
+  }
+
+  fetchDataAndUpdate();
+  setInterval(fetchDataAndUpdate, 5000);
+</script>
+</body>
+</html>
