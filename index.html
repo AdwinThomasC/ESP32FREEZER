@@ -93,22 +93,22 @@
   <div id="error"></div>
 
   <script>
-const sheetURL = "https://script.google.com/macros/s/AKfycb.../exec?action=getData&token=FreezerToken@SJRI25";
-
-  let esp1Chart = null;
-  let esp2Chart = null;
-
-  function formatTime(dateStr) {
-  const date = new Date(dateStr);
-  return date.toLocaleString(undefined, {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: true
-  });
-}
+    const sheetURL = "https://script.google.com/macros/s/AKfycbwK0rCq9c7Uot0kX67vz3_acVy0F3vll9xY4rODACDreRovfaOqpiKpsPGQGxCNu2ev/exec?action=getData";
+  
+    let esp1Chart = null;
+    let esp2Chart = null;
+  
+    function formatTime(dateStr) {
+    const date = new Date(dateStr);
+    return date.toLocaleString(undefined, {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+  }
 
 
   function createChart(ctx, labels, data, label) {
