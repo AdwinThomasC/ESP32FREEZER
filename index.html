@@ -6,64 +6,179 @@
   <title>ESP Temperature Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 20px;
-      margin: 0;
-      background-color: #f8f9fa;
-    }
-    h2 {
-      text-align: center;
-      margin-bottom: 30px;
-    }
-    .dashboard {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 40px;
-      justify-content: center;
-    }
-    .card {
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      padding: 20px;
-      width: 100%;
-      max-width: 600px;
+    * {
       box-sizing: border-box;
     }
-    .card h3 {
-      margin-top: 0;
-      margin-bottom: 12px;
-      text-align: center;
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 20px;
+      margin: 0;
+      background: linear-gradient(to right top, #eef2f7, #dce3ee);
+      color: #2c3e50;
+      overflow-x: hidden;
     }
+
+    h2 {
+      text-align: center;
+      font-size: 2.2rem;
+      color: #ffffff;
+      margin: 0;
+      padding: 20px;
+      font-weight: 600;
+      background: linear-gradient(to right, #2c3e50, #34495e);
+      position: auto;
+      top: 0;
+      z-index: 1000;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .dashboard {
+      display: flex;
+      flex-direction: row;
+      gap: 24px;
+      overflow-x: auto;
+      padding: 30px 0;
+      scroll-behavior: smooth;
+    }
+
+    .dashboard::-webkit-scrollbar {
+      height: 10px;
+    }
+    .dashboard::-webkit-scrollbar-thumb {
+      background: #888;
+      border-radius: 5px;
+    }
+    .dashboard::-webkit-scrollbar-track {
+      background-color: #e1e4eb;
+    }
+
+    .card {
+      background: linear-gradient(to bottom right, #ffffff, #f9f9fb);
+      border-radius: 20px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+      padding: 24px;
+      width: 100%;
+      max-width: 620px;
+      min-width: 320px;
+      transition: transform 0.3s ease, box-shadow 0.4s ease;
+      flex-shrink: 0;
+    }
+
+    .card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
+    }
+
+    .card h3 {
+      margin: 0 0 20px;
+      font-size: 1.6rem;
+      color: #2c3e50;
+      text-align: center;
+      border-bottom: 2px solid #e1e4eb;
+      padding-bottom: 12px;
+    }
+
     canvas {
       width: 100% !important;
       height: 300px !important;
+      margin-bottom: 20px;
     }
+
     table {
       width: 100%;
-      border-collapse: collapse;
-      margin-top: 15px;
+      border-collapse: separate;
+      border-spacing: 0;
+      font-size: 1rem;
+      border-radius: 8px;
+      overflow: hidden;
     }
+
     th, td {
-      border: 1px solid #ddd;
-      padding: 8px;
+      border: none;
+      padding: 10px;
       text-align: center;
     }
+
     th {
-      background-color: #f1f1f1;
+      background-color: #f0f3f7;
+      font-weight: 600;
+      color: #34495e;
     }
+
+    td {
+      background-color: #ffffff;
+      border-top: 1px solid #e1e4eb;
+    }
+
     #error {
       color: red;
       text-align: center;
       margin-top: 20px;
+      font-weight: 500;
     }
+
     .out-of-range {
-      background-color: #f8d7da;
-      color: #721c24;
+      background-color: #ffe6e6 !important;
+      color: #a94442;
       font-weight: bold;
-  }
-  </style>
+      animation: blink 1.2s linear infinite alternate;
+    }
+
+    @keyframes blink {
+      0% { background-color: #ffe6e6; }
+      100% { background-color: #f8d7da; }
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+      body {
+        padding: 15px;
+      }
+
+      h2 {
+        font-size: 1.6rem;
+      }
+
+      .card {
+        padding: 18px;
+      }
+
+      .card h3 {
+        font-size: 1.3rem;
+      }
+
+      table, th, td {
+        font-size: 0.95rem;
+      }
+
+      canvas {
+        height: 250px !important;
+      }
+    }
+
+    @media (max-width: 480px) {
+      h2 {
+        font-size: 1.4rem;
+      }
+
+      .card {
+        padding: 14px;
+      }
+
+      .card h3 {
+        font-size: 1.2rem;
+      }
+
+      table, th, td {
+        font-size: 0.9rem;
+      }
+
+      canvas {
+        height: 220px !important;
+      }
+    }
+    </style>
 </head>
 <body>
   <h2>ESP32 Temperature Monitoring Dashboard</h2>
@@ -72,9 +187,7 @@
       <h3>ESP1 Temperature</h3>
       <canvas id="esp1Chart"></canvas>
       <table>
-        <thead>
-          <tr><th>Timestamp</th><th>Temperature (°C)</th></tr>
-        </thead>
+        <thead><tr><th>Timestamp</th><th>Temperature (°C)</th></tr></thead>
         <tbody id="esp1Body"><tr><td colspan="2">Loading...</td></tr></tbody>
       </table>
     </div>
@@ -83,137 +196,159 @@
       <h3>ESP2 Temperature</h3>
       <canvas id="esp2Chart"></canvas>
       <table>
-        <thead>
-          <tr><th>Timestamp</th><th>Temperature (°C)</th></tr>
-        </thead>
+        <thead><tr><th>Timestamp</th><th>Temperature (°C)</th></tr></thead>
         <tbody id="esp2Body"><tr><td colspan="2">Loading...</td></tr></tbody>
       </table>
     </div>
+
+    <div class="card">
+      <h3>ESP3 Temperature</h3>
+      <canvas id="esp3Chart"></canvas>
+      <table>
+        <thead><tr><th>Timestamp</th><th>Temperature (°C)</th></tr></thead>
+        <tbody id="esp3Body"><tr><td colspan="2">Loading...</td></tr></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h3>ESP4 Temperature</h3>
+      <canvas id="esp4Chart"></canvas>
+      <table>
+        <thead><tr><th>Timestamp</th><th>Temperature (°C)</th></tr></thead>
+        <tbody id="esp4Body"><tr><td colspan="2">Loading...</td></tr></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h3>ESP5 Temperature</h3>
+      <canvas id="esp5Chart"></canvas>
+      <table>
+        <thead><tr><th>Timestamp</th><th>Temperature (°C)</th></tr></thead>
+        <tbody id="esp5Body"><tr><td colspan="2">Loading...</td></tr></tbody>
+      </table>
+    </div>
   </div>
+
   <div id="error"></div>
 
-  <script>
-    const sheetURL = "https://script.google.com/macros/s/AKfycbwK0rCq9c7Uot0kX67vz3_acVy0F3vll9xY4rODACDreRovfaOqpiKpsPGQGxCNu2ev/exec?action=getData";
-  
-    let esp1Chart = null;
-    let esp2Chart = null;
-  
-    function formatTime(dateStr) {
-    const date = new Date(dateStr);
-    return date.toLocaleString(undefined, {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true
-    });
-  }
+<script>
+const sheetURL = "https://script.google.com/macros/s/AKfycbwK0rCq9c7Uot0kX67vz3_acVy0F3vll9xY4rODACDreRovfaOqpiKpsPGQGxCNu2ev/exec?action=getData";
 
+const chartMap = {
+  esp1: null,
+  esp2: null,
+  esp3: null,
+  esp4: null,
+  esp5: null
+};
 
-  function createChart(ctx, labels, data, label) {
-    return new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: labels,
-        datasets: [{
-          label: label,
-          data: data,
-          borderColor: '#007bff',
-          backgroundColor: 'rgba(0, 123, 255, 0.1)',
-          tension: 0.2,
-          fill: true
-        }]
-      },
-      options: {
-        responsive: true,
-        plugins: { legend: { display: false } },
-        scales: {
-          x: {
-            ticks: { maxRotation: 45, minRotation: 45 }
-          },
-          y: {
-            beginAtZero: false,
-            title: {
-              display: true,
-              text: 'Temperature (°C)'
-            }
+function formatTime(dateStr) {
+  const date = new Date(dateStr);
+  return date.toLocaleString(undefined, {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
+  });
+}
+
+function createChart(ctx, labels, data, label) {
+  return new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: label,
+        data: data,
+        borderColor: '#007bff',
+        backgroundColor: 'rgba(0, 123, 255, 0.1)',
+        tension: 0.2,
+        fill: true
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: {
+          ticks: { maxRotation: 45, minRotation: 45 }
+        },
+        y: {
+          beginAtZero: false,
+          title: {
+            display: true,
+            text: 'Temperature (°C)'
           }
         }
       }
-    });
+    }
+  });
+}
+
+function updateChart(chart, labels, temps) {
+  if (chart) {
+    chart.data.labels = labels;
+    chart.data.datasets[0].data = temps;
+    chart.update();
+  }
+}
+
+function renderSection(rows, bodyId, canvasId, label, key) {
+  const tbody = document.getElementById(bodyId);
+  tbody.innerHTML = "";
+
+  if (!Array.isArray(rows) || rows.length === 0) {
+    tbody.innerHTML = "<tr><td colspan='2'>No data available.</td></tr>";
+    return;
   }
 
-  function updateChart(chart, labels, temps) {
-    if (chart) {
-      chart.data.labels = labels;
-      chart.data.datasets[0].data = temps;
-      chart.update();
-    }
+  const labels = [];
+  const temps = [];
+
+  rows.forEach(row => {
+    const time = formatTime(row[0]);
+    const temp = parseFloat(row[1]);
+    labels.push(time);
+    temps.push(temp);
+
+    const tr = document.createElement("tr");
+    if (temp > 30 || temp < 26) tr.classList.add("out-of-range");
+    tr.innerHTML = `<td>${time}</td><td>${temp.toFixed(1)}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  const ctx = document.getElementById(canvasId).getContext("2d");
+  if (!chartMap[key]) {
+    chartMap[key] = createChart(ctx, labels, temps, label);
+  } else {
+    updateChart(chartMap[key], labels, temps);
   }
+}
 
-  function renderSection(rows, bodyId, canvasId, label, isESP1 = true) {
-    const tbody = document.getElementById(bodyId);
-    tbody.innerHTML = "";
+function fetchDataAndUpdate() {
+  fetch(sheetURL)
+    .then(res => res.json())
+    .then(data => {
+      document.getElementById("error").textContent = "";
 
-    if (!Array.isArray(rows) || rows.length === 0) {
-      tbody.innerHTML = "<tr><td colspan='2'>No data available.</td></tr>";
-      return;
-    }
-
-    const labels = [];
-    const temps = [];
-
-    rows.forEach(row => {
-      const time = formatTime(row[0]);
-      labels.push(time);
-      temps.push(parseFloat(row[1]));
-
-      const tr = document.createElement("tr");
-      const temp = parseFloat(row[1]);
-
-      if (temp > 30 || temp < 26) {
-        tr.classList.add("out-of-range");
-      }
-
-      tr.innerHTML = `<td>${time}</td><td>${temp.toFixed(1)}</td>`;
-      tbody.appendChild(tr);
-    });
-
-    const ctx = document.getElementById(canvasId).getContext("2d");
-    if (isESP1) {
-      if (!esp1Chart) {
-        esp1Chart = createChart(ctx, labels, temps, label);
-      } else {
-        updateChart(esp1Chart, labels, temps);
-      }
-    } else {
-      if (!esp2Chart) {
-        esp2Chart = createChart(ctx, labels, temps, label);
-      } else {
-        updateChart(esp2Chart, labels, temps);
-      }
-    }
-  }
-
-  function fetchDataAndUpdate() {
-    fetch(sheetURL)
-      .then(res => res.json())
-      .then(data => {
-        document.getElementById("error").textContent = "";
-
-        renderSection(data.esp1, "esp1Body", "esp1Chart", "ESP1 Temperature", true);
-        renderSection(data.esp2, "esp2Body", "esp2Chart", "ESP2 Temperature", false);
-      })
-      .catch(error => {
-        document.getElementById("error").textContent = "Fetch error: " + error;
-        document.getElementById("esp1Body").innerHTML = "<tr><td colspan='2'>Error loading data</td></tr>";
-        document.getElementById("esp2Body").innerHTML = "<tr><td colspan='2'>Error loading data</td></tr>";
+      renderSection(data.esp1, "esp1Body", "esp1Chart", "ESP1 Temperature", "esp1");
+      renderSection(data.esp2, "esp2Body", "esp2Chart", "ESP2 Temperature", "esp2");
+      renderSection(data.esp3, "esp3Body", "esp3Chart", "ESP3 Temperature", "esp3");
+      renderSection(data.esp4, "esp4Body", "esp4Chart", "ESP4 Temperature", "esp4");
+      renderSection(data.esp5, "esp5Body", "esp5Chart", "ESP5 Temperature", "esp5");
+    })
+    .catch(error => {
+      document.getElementById("error").textContent = "Fetch error: " + error;
+      ["esp1", "esp2", "esp3", "esp4", "esp5"].forEach(id => {
+        document.getElementById(id + "Body").innerHTML = "<tr><td colspan='2'>Error loading data</td></tr>";
       });
-  }
+    });
+}
 
-  fetchDataAndUpdate();
-  setInterval(fetchDataAndUpdate, 5000);
+fetchDataAndUpdate();
+setInterval(fetchDataAndUpdate, 5000);
 </script>
 </body>
 </html>
